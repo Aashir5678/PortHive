@@ -8,13 +8,13 @@ Any further attempts at connecting to any of thse ports directly will start the 
 
 
 Things to add
-- Make TCP server in C running on Pi
-- Switch to raw sockets to capture raw packets (to detect SYN scans)
+- Make TCP server in C running on Pi using normal sockets
+- Make a seperate packet sniffer using raw sockets (will run concurrently with the other sockets) to detect SYN scans
 - Be memory and time efficient
-- Aim for 3 open ports (TCP or HTTP) on the Pi
-- Immediate connection reset (for full TCP handshake) and time between connnections between ports is too quick ? mark as suspicious, send log
+- Aim for 3 open ports (HTTP preferably) on the Pi
+- Immediate connection reset and time between connnections between ports is too quick ? mark as suspicious, send log
 - Even connection reset over long duration (eg. 5 min) from the same IP is suspicious
-- Track SYN attacks
+- Track SYN scans using raw sockets
 - Limit to 5 - 10 connections per port max (reduce memory usage)
 - Throttle IP if the attacker is spamming any one of the ports to prevent running out of memory (wait x amount of time to accept new data and log / log and block the IP)
 - Flask backend (make website localhost only, to prevent attacker from probing the dashboard)
