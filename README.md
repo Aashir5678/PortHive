@@ -9,7 +9,8 @@ Any further attempts at connecting to any of thse ports directly will start the 
 
 Things to add
 - Make TCP server in C running on Pi
-- Use as little memory as possible
+- Switch to raw sockets to capture raw packets (to detect SYN scans)
+- Be memory and time efficient
 - Aim for 3 open ports (TCP or HTTP) on the Pi
 - Immediate connection reset (for full TCP handshake) and time between connnections between ports is too quick ? mark as suspicious, send log
 - Even connection reset over long duration (eg. 5 min) from the same IP is suspicious
