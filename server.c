@@ -9,7 +9,7 @@
 #include <netdb.h>
 #include <string.h>
 
-#define PORT 5050
+#define PORT 80
 #define MAX_BACKLOG 3
 
 typedef int32_t i32;
@@ -29,19 +29,9 @@ int main()
 	// one hex digit = 4 bits = half a byte
 	// 32 bits = 4 bytes = 8 hex digits
 
-	// 127.0.0.1 = 0x7F00000 in hex aka localhost
+	// 127.0.0.1 = 0x7F 0x00 0x00 0x01 in hex aka localhost
 
 	const u32 LOCAL_HOST = 0x7F000001;
-
-	char host_name[35];
-	gethostname(host_name, sizeof(host_name));
-	struct hostent* hostentry = gethostbyname(host_name);
-
-	if (hostentry == NULL)
-	{
-		printf("error in finding hostname: %d %s\n", errno, strerror(errno));
-	}
-
 
 	u32 server_fd;
 	struct sockaddr_in server_addr;
@@ -63,7 +53,7 @@ int main()
 		return -1;
 	}
 
-	fcntl(server_fd, F_SETFL, O_NONBLOCK); // file control, set socket fd status to non blocking
+	// fcntl(server_fd, F_SETFL, O_NONBLOCK); // file control, set socket fd status to non blocking
 
 	if (bind(server_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) == -1)
 	{
@@ -80,7 +70,7 @@ int main()
 		return -1;
 	}
 
-	printf("Running server on %s\n", hostentry->h_addr);
+	printf("Running server on localhost\n");
 
 	bool server_running = true;
 	int client_fd;
@@ -107,7 +97,11 @@ int main()
 
 		else
 		{
-			printf("New client jonied %s, %d\n", client_addr.sa_data, (int) strlen(client_addr.sa_data));
+			printf("New client joined\n");
+			printf("%s\n", client_addr.sa_data);
+			printf("%s\n", inet_ntoa(*(struct in_addr *)client_addr.sa_data));
+
+
 		}
 
 
