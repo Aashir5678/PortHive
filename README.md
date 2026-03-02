@@ -1,5 +1,5 @@
 # PortHive
-A honeypot tool for the ESP32 that detects port scans and logs suspicious network activity to a dashboard.
+A honeypot tool for Linux machines that detects port scans and logs suspicious network activity to a dashboard.
 
 
 Multiple ports are open on the Raspberry Pi, if all are hit within a short time interval, the activity is logged to the dashboard (IP, ports hit, time interval, SYN / full handshake)
@@ -17,5 +17,6 @@ Things to add
 - Track SYN scans using raw sockets
 - Limit to 5 - 10 connections per port max (reduce memory usage)
 - Throttle IP if the attacker is spamming any one of the ports to prevent running out of memory (wait x amount of time to accept new data and log / log and block the IP)
-- Flask backend (make website localhost only, to prevent attacker from probing the dashboard)
-- Flask frontend
+- Ping Pi occasionally to get latency in ms
+- Flask backend (make website localhost only, to prevent attacker from probing the dashboard, sqlite to store logs and suspicious IPs)
+- Flask frontend (logs, graph latency over time)
