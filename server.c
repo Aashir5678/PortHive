@@ -20,31 +20,36 @@ typedef uint32_t u32;
 typedef uint16_t u16;
 
 
-
-
-int main()
+struct sockaddr_in get_sockaddr_in(u32 port)
 {
-
-
-	// one hex digit = 4 bits = half a byte
-	// 32 bits = 4 bytes = 8 hex digits
-
-	// 127.0.0.1 = 0x7F 0x00 0x00 0x01 in hex aka localhost
-
-	const u32 LOCAL_HOST = 0x7F000001;
+	u32 local_host = 0x7F000001;
 
 	u32 server_fd;
 	struct sockaddr_in server_addr;
 
 	struct in_addr sin_addr;
-	sin_addr.s_addr = htonl(LOCAL_HOST); // convert localhost to 32 bit host address in network byte order (big endian)
+	sin_addr.s_addr = htonl(local_host); // convert localhost to 32 bit host address in network byte order (big endian)
 
-	memset(&server_addr, 0, sizeof(server_addr)); // Initialize server addr to 0
+	memset(&server_addr, 0, sizeof(server_addr)); // Initialize server addr as empty
+
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(PORT); // htons converts 16-bit port to network byte order (big endian)
+	server_addr.sin_port = htons(port); // htons converts 16-bit (2 byte) port to network byte order (big endian)
 	server_addr.sin_addr = sin_addr;
 
-	server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	return server_addr;
+}
+
+char* be_to_ipv4_str(char ip[]) // Convert BE (big-endian) network byte order ip to ipv4 dotted string
+{
+	return inet_ntoa(*(struct in_addr *)ip);
+}
+
+
+u32 bind_and_listen_on_port(u32 port)
+{
+	u32 server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+	struct sockaddr_in server_addr = get_sockaddr_in(port);
 
 	if (server_fd == -1)
 	{
@@ -58,7 +63,7 @@ int main()
 	if (bind(server_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) == -1)
 	{
 		printf("Failed to bind\n");
-		printf("%x\n", sin_addr.s_addr);
+		printf("%x\n", server_addr.sin_addr.s_addr);
 		printf("%d %s\n", errno, strerror(errno));
 		return -1;
 	}
@@ -70,15 +75,34 @@ int main()
 		return -1;
 	}
 
+	return server_fd;
+}
+
+
+int main()
+{
+
+
+	// one hex digit = 4 bits = half a byte
+	// 32 bits = 4 bytes = 8 hex digits
+
+	// 127.0.0.1 = 0x7F 0x00 0x00 0x01 in hex aka localhost
+
+	u32 server_fd = bind_and_listen_on_port(PORT);
+
+	if (server_fd == -1)
+	{
+		return -1;
+	}
+
+	
+
 	printf("Running server on localhost\n");
 
 	bool server_running = true;
 	int client_fd;
 	struct sockaddr client_addr;
-	u32 client_addr_size = sizeof(client_addr);
-
-	// printf("Running server on %d\n", hostentry->h_length);
-	
+	u32 client_addr_size = sizeof(client_addr);	
 
 	while (server_running)
 	{
@@ -98,14 +122,10 @@ int main()
 		else
 		{
 			printf("New client joined\n");
-			printf("%s\n", client_addr.sa_data);
-			printf("%s\n", inet_ntoa(*(struct in_addr *)client_addr.sa_data));
+			printf("%s\n", be_to_ipv4_str(client_addr.sa_data));
 
 
 		}
-
-
-
 
 	}
 
