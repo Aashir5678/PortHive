@@ -8,9 +8,12 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <stdlib.h>
 
-#define PORT 80
+#define PORT 5050
 #define MAX_BACKLOG 3
+#define MAX_RECV_SIZE 200 // Must be less than max uint16 value (65k)
+#define CHUNK_SIZE 8 // Read for bytes at a time from the client
 
 typedef int32_t i32;
 typedef int64_t i64;
@@ -38,6 +41,8 @@ struct sockaddr_in get_sockaddr_in(u32 port)
 
 	return server_addr;
 }
+
+
 
 char* be_to_ipv4_str(char ip[]) // Convert BE (big-endian) network byte order ip to ipv4 dotted string
 {
@@ -77,6 +82,72 @@ u32 bind_and_listen_on_port(u32 port)
 
 	return server_fd;
 }
+
+
+void handle_client(u32 server_fd, u32 client_fd, struct sockaddr client_addr)
+{
+
+	bool client_connected = true;
+	ssize_t bytes_read = 0;
+
+	char* msg_buf = malloc(CHUNK_SIZE);
+	u16 capacity = CHUNK_SIZE;
+	u16 total_bytes_read = 0;
+
+	while (client_connected)
+	{
+		bytes_read = read(client_fd, msg_buf + total_bytes_read, CHUNK_SIZE); // only read first CHUNK_SIZE bytes
+
+		if (bytes_read == -1 && errno != EAGAIN)
+		{
+			// free(msg_buf);
+			printf("Error [%d]: %s\n", errno, strerror(errno));
+			client_connected = false;
+			break;
+		}
+
+		else if (bytes_read == 0)
+		{
+			client_connected = false;
+			break;
+		}
+
+
+		else if (bytes_read > 0)
+		{
+			
+			total_bytes_read += bytes_read;
+			// Dynamically grow msg_buf to read all data from stream
+
+			if (total_bytes_read + CHUNK_SIZE > capacity)
+			{
+				capacity *= 2;
+				msg_buf = realloc(msg_buf, capacity);
+				
+			}
+
+			// Start reading from pointer where new message started
+			printf("%s\n", msg_buf + total_bytes_read - bytes_read);
+
+		}
+
+
+		// memset(msg_buf, 0, total_bytes_read);
+
+
+	}
+
+
+	free(msg_buf);
+
+
+	int client_closed = close(client_fd);
+
+	if (client_closed < 0)
+	{
+		printf("Error [%d]: %s\n", errno, strerror(errno));
+	}
+}	
 
 
 int main()
@@ -121,8 +192,10 @@ int main()
 
 		else
 		{
+			fcntl(client_fd, F_SETFL, O_NONBLOCK);
 			printf("New client joined\n");
 			printf("%s\n", be_to_ipv4_str(client_addr.sa_data));
+			handle_client(server_fd, client_fd, client_addr);
 
 
 		}
