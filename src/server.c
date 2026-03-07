@@ -18,7 +18,7 @@
 #define MAX_RECV_SIZE 200 // Must be less than max uint16 value (65k)
 #define CHUNK_SIZE 8 // Read for bytes at a time from the client
 #define POLL_TIME 20 // Timeout in ms on poll blocking, set to -1 to block until client sends a message
-#define MAX_CONNS 3
+#define MAX_CONNS 10
 
 typedef int32_t i32;
 typedef int64_t i64;
@@ -152,8 +152,6 @@ int read_client_fd(int client_fd)
 				break;
 			}
 
-			
-			
 
 		}
 
@@ -284,6 +282,7 @@ int main(void)
 
 					else if (clients_connected >= MAX_CONNS)
 					{
+						printf("Refused client %s, too many connections\n", be_to_ipv4_str(client_addr.sa_data));
 						close_conn(client_fd);
 					}
 				}
@@ -294,11 +293,17 @@ int main(void)
 				{
 					if (curr_poll.events == EPOLLIN) // Client sent data
 					{
-						read_client_fd(curr_poll.data.fd); 
+						if (read_client_fd(curr_poll.data.fd) == -1)
+						{
+							printf("Disconnected client\n");
+							clients_connected--;
+							curr_poll.data.fd = -1;
+							close_conn(curr_poll.data.fd);
+						}
 					}
 
 
-				}	
+			}	
 		}
 		
 
