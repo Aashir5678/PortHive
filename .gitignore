@@ -1,3 +1,4 @@
 *.o
-honeypot
+*.pyc
+*.elf
 .venv
