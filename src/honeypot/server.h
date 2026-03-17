@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 
 #define MAX_CONNS 10
+#define MAX_MSG_SIZE 10 * 1000 // 10kb
 
 typedef int32_t i32;
 typedef int64_t i64;
@@ -32,7 +33,7 @@ char* get_client_ip_str(client cli);
 void print_err(int err);
 void close_conn(int fd);
 u32 bind_and_listen_on_port(const char* ipv4_str, u32 port);
-int read_client_fd(int client_fd);
+int read_client_fd(int client_fd, char* buf);
 u64 get_time_ms();
 client* find_client_by_ip(u32 ipv4, client* clients, u32 clients_connected);
 client* find_client_by_fd(u32 client_fd, client* clients, u32 clients_connected);

@@ -12,6 +12,7 @@ Any further attempts at connecting to any of thse ports directly will start the 
 - Send POST requests from honeypot to Flask server reporting attacker info, simulate fake response and response time
 - Make a seperate packet sniffer using raw sockets (will run concurrently with the other sockets) to detect SYN scans
 - Aim for 3 open ports (HTTP preferably) on the Pi
+- Implement SSH honey port ports (SSH banner + TCP handshake + hash + auth)
 - Immediate connection reset and time between connnections between ports is too quick ? mark as suspicious, send log
 - Even connection reset over long duration (eg. 5 min) from the same IP is suspicious
 - Track SYN scans using raw sockets
@@ -20,6 +21,8 @@ Any further attempts at connecting to any of thse ports directly will start the 
 - Ping Pi occasionally to get latency in ms
 - Flask backend (make website localhost only, to prevent attacker from probing the dashboard, sqlite to store logs and suspicious IPs)
 - Flask frontend (logs, graph latency over time)
+- Containerize honeypot on Pi using docker
+- Port forward Pi (only the honeypot ports):
 
 
 

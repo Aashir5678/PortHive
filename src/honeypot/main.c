@@ -2,25 +2,20 @@
 #include "flask_client.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-#include <errno.h>
 #include <unistd.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
+#include <string.h>
 #include <stdbool.h>
+#include <errno.h>
 #include <sys/epoll.h>
-
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define PORTS {80, 443, 81}
 
 
-void run_server_on_addr(const char* ipv4, u32 port)
+void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 {
-
 	u32 server_fd = bind_and_listen_on_port(ipv4, port);
 
 	if (server_fd == -1)
@@ -38,6 +33,8 @@ void run_server_on_addr(const char* ipv4, u32 port)
 	u32 client_addr_size = sizeof(client_addr);
 
 
+	// Epoll for clients and poll for flask fd
+
 	struct epoll_event event;
 	struct epoll_event events[MAX_CONNS];
 
@@ -54,7 +51,30 @@ void run_server_on_addr(const char* ipv4, u32 port)
 	event.events = EPOLLIN | EPOLLET; // Block until a new connection is made
 	event.data.fd = server_fd;
 
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, server_fd, &event) == -1) {
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, server_fd, &event) == -1) 
+	{
+		print_err(errno);
+		exit(EXIT_FAILURE);
+	}
+
+	int flask_fd = connect_to_flask_backend(flask_ipv4);
+
+	if (flask_fd > 0)
+	{
+		printf("Connected to flask backend\n");
+	}
+
+	else
+	{
+		exit(EXIT_FAILURE);
+	}
+
+
+	event.events = EPOLLIN;
+	event.data.fd = flask_fd;
+
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, flask_fd, &event) == -1)
+	{
 		print_err(errno);
 		exit(EXIT_FAILURE);
 	}
@@ -65,6 +85,24 @@ void run_server_on_addr(const char* ipv4, u32 port)
 	u32 clients_connected = 0;
 	int new_fds = 0;
 	struct epoll_event curr_poll;
+
+	char msg_buf[MAX_MSG_SIZE]; // For client messages
+	char flask_msg_buf[MAX_MSG_SIZE]; // For flask response
+
+	int bytes_read;
+
+
+	if (send_current_time_flask(flask_fd) == -1)
+	{
+		printf("couldn't send time\n");
+	}
+
+	else
+	{
+		printf("sent time\n");
+	}
+
+
 
 	while (server_running)
 	{
@@ -91,20 +129,38 @@ void run_server_on_addr(const char* ipv4, u32 port)
 
 			}
 
+			else if (curr_poll.data.fd == flask_fd) // Flask webserver sent a message to honeypot
+			{
+				if (curr_poll.events == EPOLLIN) 
+				{
+					read_client_fd(flask_fd, flask_msg_buf);
+
+					if (strstr(flask_msg_buf, "LATENCY") != NULL) // If HTTP response contains "LATENCY"
+					{
+						if (send_current_time_flask(flask_fd) == -1)
+						{
+							printf("couldn't send time\n");
+						}
+
+						else
+						{
+							printf("sent time\n");
+						}
+					}
+				}
+			}
+
 			else
 				{
 					if (curr_poll.events == EPOLLIN) // Client sent data
 					{
 						client *cli = find_client_by_fd(curr_poll.data.fd, clients, clients_connected);
-
-						if (read_client_fd(curr_poll.data.fd) == -1)
+						bytes_read = read_client_fd(curr_poll.data.fd, msg_buf);
+						if (bytes_read == -1)
 						{
 							if (cli != NULL)
 							{
 
-
-								// struct in_addr disconnected_client_ip;
-								// disconnected_client_ip.s_addr = cli->ipv4;
 								printf("Disconnected client %s\n", get_client_ip_str(*cli));
 							}
 
@@ -116,6 +172,7 @@ void run_server_on_addr(const char* ipv4, u32 port)
 
 						else
 						{
+							printf("%s\n", msg_buf);
 							if (cli == NULL)
 							{
 								printf("Internal error, client fd %d does not exist\n", curr_poll.data.fd);
@@ -123,17 +180,28 @@ void run_server_on_addr(const char* ipv4, u32 port)
 							}
 
 							printf("time connected for client in ms: %ld\n", get_time_ms() - cli->curr_time_ms);
+
+							memset(msg_buf, 0, bytes_read + 1); // + 1 for string terminator
 						}	
 					}
 
 			}
 		}
-		
+
 
 	}
 
-	printf("closing");
 
+	if (close(flask_fd) == -1)
+	{
+		print_err(errno);
+		exit(EXIT_FAILURE);
+	}
+
+	else
+	{
+		printf("Flask connection closed\n");
+	}
 
 	if (close(server_fd) == -1)
 	{
@@ -177,13 +245,19 @@ char* get_local_ip() {
 
 
 
-int main()
+int main(int argc, char** argv)
 {
+	if (argc != 2)
+	{
+		printf("Usage: ./honeypot {webserver-ip}\n");
+		exit(EXIT_FAILURE);
+	}
+
+	char* flask_ipv4 = argv[1];
 	char* ipv4 = get_local_ip();
-	printf("Host ip: %s\n", ipv4);
 	int ports[] = PORTS;
 
-	run_server_on_addr(ipv4, ports[0]);
+	run_server_on_addr(ipv4, flask_ipv4, ports[0]);
 
 
 

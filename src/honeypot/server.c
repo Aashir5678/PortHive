@@ -114,19 +114,16 @@ u32 bind_and_listen_on_port(const char* ipv4_str, u32 port)
 }
 
 
-int read_client_fd(int client_fd)
+int read_client_fd(int client_fd, char* buf)
 {
-	// Returns total bytes read by client_fd, if error return -1
+	// Returns total bytes read by client_fd and fills buf, if error return -1
 
 	ssize_t bytes_read = 0;
-
-	char* msg_buf = malloc(CHUNK_SIZE);
-	u32 capacity = CHUNK_SIZE;
 	u32 total_bytes_read = 0;
 
 	while (1)
 	{
-		bytes_read = read(client_fd, msg_buf + total_bytes_read, CHUNK_SIZE); // only read first CHUNK_SIZE bytes
+		bytes_read = read(client_fd, buf + total_bytes_read, CHUNK_SIZE); // only read first CHUNK_SIZE bytes
 
 		if (bytes_read == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
 		{
@@ -142,14 +139,9 @@ int read_client_fd(int client_fd)
 		{
 			
 			total_bytes_read += bytes_read;
-			// Dynamically grow msg_buf to read all data from stream
-
-			if (total_bytes_read + CHUNK_SIZE > capacity)
+			if (total_bytes_read + CHUNK_SIZE > MAX_MSG_SIZE)
 			{
-
-				capacity *= 2;
-				msg_buf = realloc(msg_buf, capacity);
-				
+				break;
 			}
 
 
@@ -167,17 +159,14 @@ int read_client_fd(int client_fd)
 
 	if (total_bytes_read > 0) // new data was read
 	{
-		memset(msg_buf + total_bytes_read, '\0', 1);
-		printf("%s\n", msg_buf);
+		memset(buf + total_bytes_read, '\0', 1);
+		// printf("%s\n", msg_buf);
 	}
 
 	else // fd had empty data means client disconnected
 	{
 		return -1;
 	}
-
-
-	free(msg_buf);
 
 	return total_bytes_read;
 	
