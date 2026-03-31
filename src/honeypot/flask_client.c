@@ -42,29 +42,45 @@ int connect_to_flask_backend(char* ipv4)
 
 }
 
+
+void construct_http_post(char* buf, char* endpoint, char* data, u32 max_content_len)
+{
+
+	// Fills buf with http post request to the specified endpoint with the and data
+
+	int content_len = strlen(data);
+	sprintf(buf, "POST /%s HTTP/1.1\r\n"
+					"Content-Type: application/json\r\n"
+					"Content-Length: %d\r\n"
+					"Connection: keep-alive\r\n"
+					"\r\n"
+					"%s\r\n", endpoint, content_len, data);
+
+}
+
+void construct_http_get(char* endpoint)
+{
+	
+}
+
 int send_current_time_flask(int fd)
 {
 	u64 t1 = get_time_ms();
+
 	char content_str[30];
 	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
-	int content_len = strlen(content_str);
-	char payload[250];
+	char res[MAX_MSG_SIZE];
+	construct_http_post(res, "latency", content_str, MAX_MSG_SIZE);
 
-	sprintf(payload, "POST /latency HTTP/1.1\r\n"
-                "Content-Type: application/json\r\n"
-                "Content-Length: %d\r\n"
-                "Connection: keep-alive\r\n"
-                "\r\n"
-                "{\"time\":%lu}\r\n", content_len, t1);
-
-	printf("%s\n", payload);
-	if (send_str_flask(fd, payload) == -1)
+	if (send_str_flask(fd, res) == -1)
 	{
 		return -1;
 	}
 
 	return 1;
 }
+
+
 
 int send_client_disconnect_flask(int fd, char* ipv4, u64 time_connected_at)
 {

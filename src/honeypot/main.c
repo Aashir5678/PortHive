@@ -70,7 +70,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 	}
 
 
-	event.events = EPOLLIN;
+	event.events = EPOLLIN | EPOLLET;
 	event.data.fd = flask_fd;
 
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, flask_fd, &event) == -1)
@@ -90,7 +90,6 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 	char flask_msg_buf[MAX_MSG_SIZE]; // For flask response
 
 	int bytes_read;
-
 
 	if (send_current_time_flask(flask_fd) == -1)
 	{
@@ -113,6 +112,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 			exit(EXIT_FAILURE);
 		}
 
+		
 		// Loop through all updates fd's
 		for (int i=0; i < new_fds; i++)
 		{
@@ -131,6 +131,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 			else if (curr_poll.data.fd == flask_fd) // Flask webserver sent a message to honeypot
 			{
+
 				if (curr_poll.events == EPOLLIN) 
 				{
 					read_client_fd(flask_fd, flask_msg_buf);

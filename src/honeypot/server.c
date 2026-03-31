@@ -33,7 +33,6 @@ struct sockaddr_in get_sockaddr_in(const char* ipv4_str, u32 port)
 		exit(EXIT_FAILURE);
 	}
 
-	u32 server_fd;
 	struct sockaddr_in server_addr;
 
 	struct in_addr sin_addr;
@@ -160,7 +159,6 @@ int read_client_fd(int client_fd, char* buf)
 	if (total_bytes_read > 0) // new data was read
 	{
 		memset(buf + total_bytes_read, '\0', 1);
-		// printf("%s\n", msg_buf);
 	}
 
 	else // fd had empty data means client disconnected
@@ -263,8 +261,6 @@ u32 accept_new_clients(u32 server_fd, int epollfd, client* cli_buf, u32 clients_
 
 			client new_client = {.fd=client_fd, .ipv4=(u32) ip_be.s_addr, .curr_time_ms=get_time_ms()};
 			*cli_buf = new_client;
-
-			// print_client(*cli_buf);
 			
 			printf("New client joined: %s, # of clients: %d\n", be_to_ipv4_str(client_addr.sa_data), clients_connected + new_clients_joined);
 			

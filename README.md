@@ -10,7 +10,8 @@ Any further attempts at connecting to any of thse ports directly will start the 
 ## Things to add
 - Make TCP server in C running on Pi using normal sockets (Done)
 - Send POST requests from honeypot to Flask server reporting attacker info, simulate fake response and response time
-- Parse and construct HTTP responses in C [HTTP Parser](https://github.com/h2o/picohttpparser), [JSON Parser](https://github.com/DaveGamble/cJSON)
+- Consider swtiching to [MQTT](https://github.com/LiamBindle/MQTT-C) ?
+- Parse and construct HTTP responses in C [HTTP Parser](https://github.com/h2o/picohttpparser), [JSON Parser](https://github.com/DaveGamble/cJSON) (does NOT validate the JSON)
 - Make a seperate packet sniffer using raw sockets (will run concurrently with the other sockets) to detect SYN scans
 - Aim for 3 open ports (HTTP preferably) on the Pi
 - Implement SSH honey port ports (SSH banner + TCP handshake + hash + auth)

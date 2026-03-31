@@ -15,7 +15,7 @@ def index() -> str:
 	else:
 		return f"<h1>Port Hive</h1><h2>"
 
-@app.route("/latency", methods=["POST"])
+@app.route("/latency", methods=["POST", "GET"])
 def latency() -> str:
 	if request.method == "POST":
 		system_time = request.get_json()
@@ -25,8 +25,10 @@ def latency() -> str:
 		
 		latency_times.append(system_time["time"])
 
-	return "LATENCY"
-			
+		return "LATENCY"
+
+	else:
+		return "<h1>Latency</h1>"
 
 
 def get_ip() -> str:
