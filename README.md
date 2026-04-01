@@ -10,8 +10,7 @@ Any further attempts at connecting to any of thse ports directly will start the 
 ## Things to add
 - Make TCP server in C running on Pi using normal sockets (Done)
 - Send POST requests from honeypot to Flask server reporting attacker info, simulate fake response and response time
-- Consider swtiching to [MQTT](https://github.com/LiamBindle/MQTT-C) ?
-- Parse and construct HTTP responses in C [HTTP Parser](https://github.com/h2o/picohttpparser), [JSON Parser](https://github.com/DaveGamble/cJSON) (does NOT validate the JSON)
+- Parse and construct HTTP responses in C [libcurl](https://curl.se/libcurl/c/libcurl-tutorial.html), [JSON Parser](https://github.com/DaveGamble/cJSON) (does NOT validate the JSON)
 - Make a seperate packet sniffer using raw sockets (will run concurrently with the other sockets) to detect SYN scans
 - Aim for 3 open ports (HTTP preferably) on the Pi
 - Implement SSH honey port ports (SSH banner + TCP handshake + hash + auth)
@@ -23,7 +22,7 @@ Any further attempts at connecting to any of thse ports directly will start the 
 - Ping Pi occasionally to get latency in ms
 - Flask backend (make website localhost only, to prevent attacker from probing the dashboard, sqlite to store logs and suspicious IPs)
 - Flask frontend (logs, graph latency over time)
-- Containerize honeypot on Pi using docker
+- Containerize honeypot on Pi using Docker
 - Port forward Pi (only the honeypot ports):
 
 
@@ -34,8 +33,8 @@ Create a virtual environment to install dependancies
 
 From the root directory:
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ````
 
 Now you can install the packages needed:
@@ -44,12 +43,16 @@ Now you can install the packages needed:
 pip3 install -r requirements.txt
 ````
 
-Then you can run the server:
+Then you can run the dashboard server:
 ````bash
 python3 src/backend/app.py
 ````
 
-On the target Linux server, run the honeypot as root:
+On the target Linux server, install libcurl and run the honeypot as root:
+
+````bash
+sudo apt-get install libcurl4-openssl-dev
+````
 ````bash
 sudo /src/honeypot/honeypot
 ````

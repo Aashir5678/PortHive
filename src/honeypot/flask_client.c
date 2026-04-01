@@ -10,74 +10,145 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include "flask_client.h"
+#include <curl/curl.h>
 #include "server.h"
+
 
 
 int connect_to_flask_backend(char* ipv4)
 {
-	int flask_client_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (flask_client_fd == -1)
+	int flask_client_fd = -1;
+
+
+	CURL *curl;
+	CURLcode res;
+	curl_socket_t fd;
+
+	// 7 bytes for http://, 12 bytes for ip, 3 for dots, 1 for : and 5 for port call it 32 to be safe
+	char flask_website_url[32];
+
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+
+	curl = curl_easy_init();
+	if (curl)
 	{
-		printf("Couldn't create flask client fd\n");
-		print_err(errno);
+		snprintf(flask_website_url, sizeof(flask_website_url), "http://%s:%d", ipv4, FLASK_PORT);
+		curl_easy_setopt(curl, CURLOPT_URL, flask_website_url);
+		curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 1L); // Set to raw socket mode
+
+
+		res = curl_easy_perform(curl);
+
+		if (res == CURLE_OK)
+		{
+			res = curl_easy_getinfo(curl, CURLINFO_ACTIVESOCKET, &fd);
+
+			if (!res && fd != CURL_SOCKET_BAD)
+			{
+				flask_client_fd = (int) fd;
+
+				return flask_client_fd;
+			}
+		}
+
+		else
+		{
+			curl_easy_cleanup(curl);
+
+		}
+	}
+
+	return -1;
+
+}
+
+
+int send_http_post(char* ipv4, char* endpoint, char* data)
+{
+
+	// Convert ip, port and endpoint to website address
+	char endpoint_url[64];
+	snprintf(endpoint_url, sizeof(endpoint_url), "http://%s:%d/%s", ipv4, FLASK_PORT, endpoint);
+	CURL *curl = curl_easy_init();
+
+	curl_easy_setopt(curl, CURLOPT_URL, endpoint_url);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+
+	struct curl_slist *headers = NULL;
+	headers = curl_slist_append(headers, "Content-Type: application/json");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+	if (curl_easy_perform(curl) != CURLE_OK)
+	{
+		curl_slist_free_all(headers);
+		curl_easy_cleanup(curl);
 		return -1;
 	}
 
-	struct sockaddr_in flask_addr;
-	flask_addr.sin_family = AF_INET;
-	flask_addr.sin_port = htons(FLASK_PORT);
-	flask_addr.sin_addr.s_addr = inet_addr(ipv4);
+	curl_slist_free_all(headers);
+	curl_easy_cleanup(curl);
+	return 1;
+}
 
-	if (connect(flask_client_fd, (struct sockaddr*)&flask_addr, sizeof(flask_addr)) == -1)
+
+int send_http_get(char* ipv4, char* endpoint)
+{
+	return -1;
+}
+
+
+// Send an HTTP post to the endpoint and wait for a response from the server
+int send_http_post_res(char* ipv4, char* endpoint, char* data)
+{
+	// Convert ip, port and endpoint to website address
+	char endpoint_url[64];
+	snprintf(endpoint_url, sizeof(endpoint_url), "http://%s:%d/%s", ipv4, FLASK_PORT, endpoint);
+	CURL *curl = curl_easy_init();
+
+	curl_easy_setopt(curl, CURLOPT_URL, endpoint_url);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+
+	struct curl_slist *headers = NULL;
+	headers = curl_slist_append(headers, "Content-Type: application/json");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	CURLcode res = curl_easy_perform(curl);
+
+	curl_slist_free_all(headers);
+	curl_easy_cleanup(curl);
+	if (res == CURLE_OK)
 	{
-		printf("Couldn't connect to flask backend\n");
-		print_err(errno);
-		return -1;
+		return 1;
 	}
 
-	fcntl(flask_client_fd, F_SETFL, O_NONBLOCK);
-
-	return flask_client_fd;
-
+	else
+	{
+		return -1;
+	}
 }
 
 
-void construct_http_post(char* buf, char* endpoint, char* data, u32 max_content_len)
-{
-
-	// Fills buf with http post request to the specified endpoint with the and data
-
-	int content_len = strlen(data);
-	sprintf(buf, "POST /%s HTTP/1.1\r\n"
-					"Content-Type: application/json\r\n"
-					"Content-Length: %d\r\n"
-					"Connection: keep-alive\r\n"
-					"\r\n"
-					"%s\r\n", endpoint, content_len, data);
-
-}
-
-void construct_http_get(char* endpoint)
-{
-	
-}
-
-int send_current_time_flask(int fd)
+int send_current_time_flask(char* ipv4, int fd)
 {
 	u64 t1 = get_time_ms();
 
 	char content_str[30];
 	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
-	char res[MAX_MSG_SIZE];
-	construct_http_post(res, "latency", content_str, MAX_MSG_SIZE);
+	return send_http_post(ipv4, "latency", content_str);
 
-	if (send_str_flask(fd, res) == -1)
-	{
-		return -1;
-	}
+}
 
-	return 1;
+
+int send_latency_flask(char* ipv4, int fd)
+{
+	u64 t1 = get_time_ms();
+
+	char content_str[30];
+	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
+	int res1 = send_http_post_res(ipv4, "latency", content_str);
+	int res2 = send_http_post_res(ipv4, "latency", content_str);
+
+	return res1 && res2;
 }
 
 
@@ -106,6 +177,8 @@ int send_str_flask(int fd, char* msg)
 			return -1;
 		}
 	}
+
+	send(fd, '\0', 1, 0);
 
 	return bytes_sent;
 }

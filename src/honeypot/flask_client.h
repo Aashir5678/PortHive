@@ -15,8 +15,12 @@ int connect_to_flask_backend(char* ipv4);
 int send_str_flask(int fd, char* msg);
 int send_client_disconnect_flask(int fd, char* ipv4, u64 time_connected_at);
 int send_client_join_flask(int fd, char* ipv4);
-int send_current_time_flask(int fd);
-void construct_http_post(char* buf, char* endpoint, char* data, u32 max_content_len);
-void construct_http_get(char* endpoint);
+int send_current_time_flask(char* ipv4, int fd);
+
+int send_http_post(char* ipv4, char* endpoint, char* data);
+int send_http_get(char* ipv4, char* endpoint);
+int send_latency_flask(char* ipv4, int fd);
+int send_http_post_res(char* ipv4, char* endpoint, char* data);
+
 
 #endif

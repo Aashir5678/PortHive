@@ -18,8 +18,8 @@ def index() -> str:
 @app.route("/latency", methods=["POST", "GET"])
 def latency() -> str:
 	if request.method == "POST":
+		print("POST")
 		system_time = request.get_json()
-
 		if len(latency_times) == 2:
 			latency_times.clear()
 		

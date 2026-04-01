@@ -61,7 +61,6 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 	if (flask_fd > 0)
 	{
-		printf("Connected to flask backend\n");
 	}
 
 	else
@@ -91,21 +90,25 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 	int bytes_read;
 
-	if (send_current_time_flask(flask_fd) == -1)
+	if (send_latency_flask(flask_ipv4, flask_fd) == -1)
 	{
-		printf("couldn't send time\n");
+		printf("couldn't get latency time\n");
 	}
 
 	else
 	{
-		printf("sent time\n");
+		// printf("got latency time\n");
 	}
 
 
 
 	while (server_running)
 	{
-		new_fds = epoll_wait(epollfd, events, MAX_CONNS, -1); // Gets all fd's where something new happend (new conn or read / write from existing conn), -1 for no timeout
+		if (send_latency_flask(flask_ipv4, flask_fd) == -1)
+		{
+			printf("latency failed\n");
+		}
+		new_fds = epoll_wait(epollfd, events, MAX_CONNS, 2000); // Gets all fd's where something new happend (new conn or read / write from existing conn), -1 for no timeout
 		if (new_fds == -1)
 		{
 			print_err(errno);
@@ -136,18 +139,20 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 				{
 					read_client_fd(flask_fd, flask_msg_buf);
 
-					if (strstr(flask_msg_buf, "LATENCY") != NULL) // If HTTP response contains "LATENCY"
-					{
-						if (send_current_time_flask(flask_fd) == -1)
-						{
-							printf("couldn't send time\n");
-						}
+					// Replace with HTTP parser
 
-						else
-						{
-							printf("sent time\n");
-						}
-					}
+					// if (strstr(flask_msg_buf, "LATENCY") != NULL) // If HTTP response contains "LATENCY"
+					// {
+					// 	if (send_current_time_flask(flask_ipv4, flask_fd) == -1)
+					// 	{
+					// 		printf("couldn't send time\n");
+					// 	}
+
+					// 	else
+					// 	{
+					// 		printf("sent time second\n");
+					// 	}
+					// }
 				}
 			}
 
