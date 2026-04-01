@@ -51,6 +51,7 @@ python3 src/backend/app.py
 On the target Linux server, install libcurl and run the honeypot as root:
 
 ````bash
+sudo apt-get update
 sudo apt-get install libcurl4-openssl-dev
 ````
 ````bash

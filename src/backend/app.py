@@ -9,7 +9,8 @@ latency_times = []
 @app.route("/", methods=["GET"])
 def index() -> str:
 	if len(latency_times) == 2:
-		latency_ms = round((latency_times[1] - latency_times[0]) / 2)
+		# latency_ms = round((latency_times[1] - latency_times[0]) / 2)
+		latency_ms = (latency_times[1] - latency_times[0])
 		return f"<h1>Port Hive</h1><h2>Latency: {str(latency_ms)} ms"
 
 	else:

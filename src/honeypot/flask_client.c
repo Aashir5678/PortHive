@@ -146,6 +146,9 @@ int send_latency_flask(char* ipv4, int fd)
 	char content_str[30];
 	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
 	int res1 = send_http_post_res(ipv4, "latency", content_str);
+
+	u64 t2 = get_time_ms();
+	sprintf(content_str, "{\"time\":%lu}\r\n", t2);
 	int res2 = send_http_post_res(ipv4, "latency", content_str);
 
 	return res1 && res2;
