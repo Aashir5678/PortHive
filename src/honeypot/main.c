@@ -14,6 +14,9 @@
 #define PORTS {80, 443, 81}
 
 
+
+
+
 void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 {
 	u32 server_fd = bind_and_listen_on_port(ipv4, port);
@@ -130,6 +133,18 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 					exit(EXIT_FAILURE);
 				}
 
+
+				else
+				{
+					client cli = *(clients + clients_connected - 1);
+					char data[64];
+					snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d,\"time\":%lu}\r\n", get_client_ip_str(cli), port, cli.curr_time_ms);
+					if (send_http_post(flask_ipv4, "new", data) == -1)
+					{
+						printf("error sending new client\n");
+					}
+				}
+
 			}
 
 			else if (curr_poll.data.fd == flask_fd) // Flask webserver sent a message to honeypot
@@ -139,20 +154,6 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 				{
 					read_client_fd(flask_fd, flask_msg_buf);
 
-					// Replace with HTTP parser
-
-					// if (strstr(flask_msg_buf, "LATENCY") != NULL) // If HTTP response contains "LATENCY"
-					// {
-					// 	if (send_current_time_flask(flask_ipv4, flask_fd) == -1)
-					// 	{
-					// 		printf("couldn't send time\n");
-					// 	}
-
-					// 	else
-					// 	{
-					// 		printf("sent time second\n");
-					// 	}
-					// }
 				}
 			}
 
@@ -166,6 +167,12 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 						{
 							if (cli != NULL)
 							{
+								char data[64];
+								snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d}\r\n", get_client_ip_str(*cli), port);
+								if (send_http_post(flask_ipv4, "remove", data) == -1)
+								{
+									printf("error sending new client\n");
+								}
 
 								printf("Disconnected client %s\n", get_client_ip_str(*cli));
 							}

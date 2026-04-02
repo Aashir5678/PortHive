@@ -14,6 +14,11 @@
 #include "server.h"
 
 
+// Prevents printing to stdout when response is received
+size_t silent_callback(char *ptr, size_t size, size_t nmemb, void *userdata) 
+{
+    return size * nmemb;
+}
 
 int connect_to_flask_backend(char* ipv4)
 {
@@ -37,7 +42,7 @@ int connect_to_flask_backend(char* ipv4)
 		curl_easy_setopt(curl, CURLOPT_URL, flask_website_url);
 		curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 1L); // Set to raw socket mode
 
-
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, silent_callback);
 		res = curl_easy_perform(curl);
 
 		if (res == CURLE_OK)
@@ -78,6 +83,7 @@ int send_http_post(char* ipv4, char* endpoint, char* data)
 	struct curl_slist *headers = NULL;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, silent_callback);
 
 	if (curl_easy_perform(curl) != CURLE_OK)
 	{
@@ -112,6 +118,7 @@ int send_http_post_res(char* ipv4, char* endpoint, char* data)
 	struct curl_slist *headers = NULL;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, silent_callback);
 	CURLcode res = curl_easy_perform(curl);
 
 	curl_slist_free_all(headers);
@@ -181,7 +188,7 @@ int send_str_flask(int fd, char* msg)
 		}
 	}
 
-	send(fd, '\0', 1, 0);
+	// send(fd, '\0', 1, 0);
 
 	return bytes_sent;
 }

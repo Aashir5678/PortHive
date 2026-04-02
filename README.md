@@ -48,13 +48,14 @@ Then you can run the dashboard server:
 python3 src/backend/app.py
 ````
 
-On the target Linux server, install libcurl and run the honeypot as root:
+On the target Linux server, install libcurl, run the makefile and run the honeypot as root:
 
 ````bash
 sudo apt-get update
 sudo apt-get install libcurl4-openssl-dev
 ````
 ````bash
+make
 sudo /src/honeypot/honeypot
 ````
 
