@@ -48,6 +48,14 @@ Then you can run the dashboard server:
 python3 src/backend/app.py
 ````
 
+Make a firewall exception on the machine where your dashboard server is being hosted to allow your Linux machine to connect to it
+
+Replace IP with the ip address of the Linux machine, and FLASK_PORT to the port on which the webserver is being hosted on (defualt 5000)
+
+````bash
+sudo ufw allow from IP to any port FLASK_PORT proto tcp
+````
+
 On the target Linux server, install libcurl, run the makefile and run the honeypot as root:
 
 ````bash

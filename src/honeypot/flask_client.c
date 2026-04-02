@@ -188,7 +188,5 @@ int send_str_flask(int fd, char* msg)
 		}
 	}
 
-	// send(fd, '\0', 1, 0);
-
 	return bytes_sent;
 }

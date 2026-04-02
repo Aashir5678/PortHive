@@ -186,6 +186,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 						else
 						{
 							printf("%s\n", msg_buf);
+							
 							if (cli == NULL)
 							{
 								printf("Internal error, client fd %d does not exist\n", curr_poll.data.fd);
