@@ -71,16 +71,6 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 		exit(EXIT_FAILURE);
 	}
 
-
-	event.events = EPOLLIN | EPOLLET;
-	event.data.fd = flask_fd;
-
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, flask_fd, &event) == -1)
-	{
-		print_err(errno);
-		exit(EXIT_FAILURE);
-	}
-
 	client clients[MAX_CONNS];
 
 
@@ -89,18 +79,11 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 	struct epoll_event curr_poll;
 
 	char msg_buf[MAX_MSG_SIZE]; // For client messages
-	char flask_msg_buf[MAX_MSG_SIZE]; // For flask response
-
 	int bytes_read;
 
 	if (send_latency_flask(flask_ipv4, flask_fd) == -1)
 	{
 		printf("couldn't get latency time\n");
-	}
-
-	else
-	{
-		// printf("got latency time\n");
 	}
 
 
@@ -147,15 +130,6 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 			}
 
-			else if (curr_poll.data.fd == flask_fd) // Flask webserver sent a message to honeypot
-			{
-
-				if (curr_poll.events == EPOLLIN) 
-				{
-					read_client_fd(flask_fd, flask_msg_buf);
-
-				}
-			}
 
 			else
 				{
@@ -171,7 +145,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 								snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d}\r\n", get_client_ip_str(*cli), port);
 								if (send_http_post(flask_ipv4, "remove", data) == -1)
 								{
-									printf("error sending new client\n");
+									printf("error removing client\n");
 								}
 
 								printf("Disconnected client %s\n", get_client_ip_str(*cli));
@@ -185,12 +159,44 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 						else
 						{
+							// Empty message is an indicator of port scanning
+							if (bytes_read == 0)
+							{
+								printf("Potential scanning\n");
+								char data[64];
+								snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d}\r\n", get_client_ip_str(*cli), port);
+								if (send_http_post(flask_ipv4, "remove", data) == -1)
+								{
+									printf("error sending new client\n");
+								}
+
+								printf("Disconnected client %s\n", get_client_ip_str(*cli));
+
+								clients_connected--;
+								close_conn(curr_poll.data.fd);
+								curr_poll.data.fd = -1;
+								continue;
+							}
+
 							printf("%s\n", msg_buf);
 							
+
 							if (cli == NULL)
 							{
 								printf("Internal error, client fd %d does not exist\n", curr_poll.data.fd);
 								exit(EXIT_FAILURE);
+							}
+
+							else
+							{
+								char data[64 + bytes_read];
+								snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d,\"msg\":\"%s\"}\r\n", get_client_ip_str(*cli), port, msg_buf);
+
+								printf("%s\n", data);
+								if (send_http_post(flask_ipv4, "new_msg", data) == -1)
+								{
+									printf("error sending new client msg\n");
+								}
 							}
 
 							printf("time connected for client in ms: %ld\n", get_time_ms() - cli->curr_time_ms);

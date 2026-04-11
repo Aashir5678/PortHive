@@ -135,27 +135,16 @@ int send_http_post_res(char* ipv4, char* endpoint, char* data)
 }
 
 
-int send_current_time_flask(char* ipv4, int fd)
-{
-	u64 t1 = get_time_ms();
-
-	char content_str[30];
-	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
-	return send_http_post(ipv4, "latency", content_str);
-
-}
-
-
 int send_latency_flask(char* ipv4, int fd)
 {
 	u64 t1 = get_time_ms();
 
-	char content_str[30];
-	sprintf(content_str, "{\"time\":%lu}\r\n", t1);
+	char content_str[32];
+	snprintf(content_str, sizeof(content_str), "{\"time\":%lu}\r\n", t1);
 	int res1 = send_http_post_res(ipv4, "latency", content_str);
 
 	u64 t2 = get_time_ms();
-	sprintf(content_str, "{\"time\":%lu}\r\n", t2);
+	snprintf(content_str, sizeof(content_str), "{\"time\":%lu}\r\n", t2);
 	int res2 = send_http_post_res(ipv4, "latency", content_str);
 
 	return res1 && res2;
