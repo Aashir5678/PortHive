@@ -13,6 +13,8 @@ latency_times = []
 
 clients = []
 port_scanning_clients = []
+injection_attempts = []
+
 
 
 class Client:
@@ -67,11 +69,15 @@ def latency():
 
 @app.route("/new_msg", methods=["POST"])
 def new_client_msg():
-	msg_data = request.get_json()
+	msg_data = request.get_json(force=True, silent=True)
+
+	# Attempted injection
+	if msg_data is None:
+		print (f"Attempted injection")
+		return "Injection attempt", 400
 
 	for i in range(len(clients)):
 		if clients[i].ipv4 == msg_data["ipv4"] and clients[i].port == msg_data["port"]:
-
 			# SANATIZE JSON HERE
 			clients[i].messages.append(msg_data["msg"])
 
@@ -141,7 +147,7 @@ def remove_client():
 def get_clients():
 	clis = []
 	for client in clients:
-		clis.append({"ipv4": client.ipv4, "port": client.port, "time_connected_at": client.time_connected_at, "status": client.connected})
+		clis.append({"ipv4": client.ipv4, "port": client.port, "time_connected_at": client.time_connected_at, "status": client.connected, "messages": client.messages})
 
 	return jsonify(clis)
 
@@ -153,5 +159,5 @@ def get_ip():
 	return s.getsockname()[0]
 
 if __name__ == "__main__":
-	ip = get_ip()
-	app.run(host=ip, port=FLASK_PORT, debug=True)
+	# ip = get_ip()
+	app.run(host="localhost", port=FLASK_PORT, debug=True)

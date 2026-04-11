@@ -17,7 +17,7 @@
 
 
 #define MAX_BACKLOG 2
-#define CHUNK_SIZE 8 // max bytes at a time when reading from the client
+#define CHUNK_SIZE 32 // max bytes at a time when reading from the client
 
 
 

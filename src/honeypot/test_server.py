@@ -14,7 +14,8 @@ def handle_client(conn, addr):
 
 		else:
 			if not msg:
-				print ("Empty message, possible port scanning")
+				pass
+				# print ("Empty message, possible port scanning")
 
 			else:	
 				print(f"[{str(addr)}]: {msg}")

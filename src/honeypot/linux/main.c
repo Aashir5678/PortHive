@@ -189,6 +189,7 @@ void run_server_on_addr(const char* ipv4, char* flask_ipv4, u32 port)
 
 							else
 							{
+								msg_buf[bytes_read - 1] = '\0'; // Get rid of \n character (invalid JSON)
 								char data[64 + bytes_read];
 								snprintf(data, sizeof(data), "{\"ipv4\":\"%s\",\"port\":%d,\"msg\":\"%s\"}\r\n", get_client_ip_str(*cli), port, msg_buf);
 
